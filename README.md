@@ -1,7 +1,7 @@
 # Data Analysis
 
 ## Course Information
-Online learning with actual projects, further information on [Udacity](https://cn.udacity.com/course/data-analyst-nanodegree--nd002-cn-advanced-trial).
+Online learning with actual projects, further information in [Udacity](https://cn.udacity.com/course/data-analyst-nanodegree--nd002-cn-advanced-trial).
 
 ## Project Content
 - Test a perceptual phenomenon

@@ -1,0 +1,493 @@
+wineQualityReds
+========================================================
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, packages}
+# 加载所需要的库文件
+library(ggplot2)
+library(gridExtra)
+library(RColorBrewer)
+```
+
+```{r echo=FALSE, Load_the_Data}
+# 读入数据集
+wineQuality <- read.csv('wineQualityReds.csv', sep = ',')
+
+```
+<br/> 
+
+# 单变量绘图选择  
+
+#### **1. 首先对数据集内所有变量绘制直方图，以直观感受数据的整体分布情况**
+```{r echo=FALSE, echo=FALSE, message=FALSE, warning=FALSE, Univariate_Plots}
+
+# 依次绘制所有变量的频率直方图 
+p1 <- qplot(x = fixed.acidity, data = wineQuality, 
+      color = I('black'), fill = I('orange')) 
+  
+p2 <- qplot(x = volatile.acidity, data = wineQuality, 
+      color = I('black'), fill = I('orange')) 
+
+p3 <- qplot(x = citric.acid, data = wineQuality,
+      color = I('black'), fill = I('orange')) 
+
+p4 <- qplot(x = residual.sugar, data = wineQuality,
+      color = I('black'), fill = I('orange')) 
+ 
+p5 <- qplot(x = chlorides, data = wineQuality, 
+      color = I('black'), fill = I('orange')) 
+
+p6 <- qplot(x = free.sulfur.dioxide, data = wineQuality, 
+      color = I('black'), fill = I('orange')) 
+
+p7 <- qplot(x = total.sulfur.dioxide, data = wineQuality, 
+      color = I('black'), fill = I('orange')) 
+
+p8 <- qplot(x = density, data = wineQuality, 
+      color = I('black'), fill = I('orange')) 
+
+p9 <- qplot(x = pH, data = wineQuality, 
+      color = I('black'), fill = I('orange')) 
+
+p10 <- qplot(x = sulphates, data = wineQuality, 
+      color = I('black'), fill = I('orange')) 
+
+p11 <- qplot(x = alcohol, data = wineQuality, 
+      color = I('black'), fill = I('orange')) 
+
+p12 <- qplot(x = quality, data = wineQuality, geom = 'bar',
+      color = I('black'), fill = I('orange')) +
+  scale_x_continuous(breaks = seq(0,10))
+
+grid.arrange(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12)
+```
+
+##### 小结
+- 对数据集中的12个变量依次绘制直方图或柱状图，查看其数据分布发现其中绝大部分变量可以近似理解为符合正态分布(除了residual.sugar, chlorides属于偏斜数据)
+- 从pH值的分布发现，红酒整体pH值偏低，都属于呈酸性；从density的分布来，红酒的密度与水非常非常接近；从residual.sugar来看，红酒整体残余糖分偏低，但也存在一些极值与整体偏差较大。
+- 数据集中的红酒，绝大部分评分在5-6左右，既中等级别。  
+<br/> 
+
+####  **2. 利用箱形图，观察上文中的偏斜分布的数据(residual.sugar, chlorides)的四分位及outliers**  
+```{r echo = FALSE}
+ggplot(aes(y = residual.sugar, x = 'Visualization of Residu.sugar'), 
+       data = wineQuality) + 
+  geom_boxplot(fill = 'gray', outlier.color = 'red', outlier.shape = 1)
+```
+  
+##### 小结  
+- 对于变量Residual.sugar观察, 经可视化可认为该数据中存在21个异常值(红色部分)  
+
+```{r echo = FALSE}
+ggplot(aes(y = chlorides, x = 'Visualization of Chlorides'), 
+       data = wineQuality) + 
+  geom_boxplot(fill = 'gray', outlier.color = 'red', outlier.shape = 1)
+```
+
+##### 小结  
+- 对于变量chlorides观察, 经可视化可认为该数据中存在19个异常值(红色部分)  
+<br/> 
+  
+#### **3. 异常值处理**  
+- 结合subset与quantile函数，另数据集只包括原始数据中chlorides&residual.sugar都小于前95%的部分
+```{r echo=FALSE}
+# 取变量chlorides, residual.sugar, sulphates中前0.95部分作为数据集
+wineQuality <- subset(wineQuality, 
+      chlorides < quantile(wineQuality$chlorides, 0.95) &
+      residual.sugar < quantile(wineQuality$residual.sugar, 0.95) &
+      sulphates < quantile(wineQuality$sulphates, 0.95))
+```  
+<br/>  
+
+####  **4. 利用summary函数，获取当前部分变量的四分位，并利用中位数对其分档，保存为新的变量**  
+  
+##### Summarize the variable: quality
+```{r echo = FALSE}
+# 按中位数对变量quality分组
+summary(wineQuality$quality)
+wineQuality$quality.bucket <- cut(wineQuality$quality, 
+                                  c(3, 6, 8))
+```
+
+##### Summarize the variable: volatile.acidity
+```{r echo = FALSE}
+# 按中位数对变量volatile.acidity分组
+summary(wineQuality$volatile.acidity)
+wineQuality$volatile.acidity.bucket <- cut(wineQuality$volatile.acidity, 
+                                  c(0.12, 0.52, 1.33 ))
+```
+
+##### Summarize the variable: citric.acid
+```{r echo = FALSE}
+# 按中位数对变量citric.acid分组
+summary(wineQuality$citric.acid)
+wineQuality$citric.acid.bucket <- cut(wineQuality$citric.acid, 
+                                  c(0, 0.24, 0.79 ))
+```
+
+##### Summarize the variable: sulphates
+```{r echo = FALSE}
+# 按中位数对变量sulphates分组
+summary(wineQuality$sulphates)
+wineQuality$sulphates.bucket <- cut(wineQuality$sulphates, 
+                                  c(0.33, 0.61, 0.92 ))
+```
+
+##### Summarize the variable: alcohol
+```{r echo = FALSE}
+# 按中位数对变量alcohol分组
+summary(wineQuality$alcohol)
+wineQuality$alcohol.bucket <- cut(wineQuality$alcohol, 
+                                  c(8.4, 10.2, 14.0 ))
+```
+
+##### Summarize the variable: pH
+```{r echo = FALSE}
+# 按中位数对变量pH分组
+summary(wineQuality$pH)
+wineQuality$pH.bucket <- cut(wineQuality$pH, c(2.86, 3.32, 4.01))
+```
+<br/>   
+
+# 单变量分析
+
+### 你的数据集结构是什么？
+- 数据集包含了1599条关于红酒的数据，每一条数据有13个维度。  
+<br/>   
+
+### 你的数据集内感兴趣的主要特性有哪些？
+- 主要酸度, 残余糖分residual.sugar, 柠檬酸citric.acid, 酸碱度pH及酒精含量alcohol对最终红酒质量的影响。  
+<br/>  
+
+### 你认为数据集内哪些其他特征可以帮助你探索兴趣特点？
+- 密度density和残余糖分含量关系较大，可以借助density对残糖进行分析；  
+- fixed.acidity, volatile.acidity及citric.acid三种不同的酸度可能存在一定关系，并且可以借助该三个变量得到总体酸度；  
+- chlorides, free.sulfur.dioxide, total.sulfur.dioxide,  sulphates可能会对pH值产生影响。  
+<br/> 
+
+### 根据数据集内已有变量，你是否创建了任何新变量？  
+- 对于quality, volatile.acidity, citric.acid, sulphates, alcohol, pH六个变量，分别按照各自的中值划分为2个分组，创建对应的新变量quality.bucket, volatile.acidity.bucket, citric.acid.bucket和sulphates.bucket, pH.bucket。  
+<br/>  
+
+### 在已经探究的特性中，是否存在任何异常分布？你是否对数据进行一些操作，如清洁、调整或改变数据的形式？如果是，你为什么会这样做？
+- 根据直方图可视化，发现数据中chlorides与residual.sugar属于“长尾”数据，因此利用quantile函数取其各自的前0.95作为数据集。  
+<br/>  
+  
+# 双变量绘图选择
+
+#### **1. 对于categorica VS numerical变量，对volatile.acidity与quality之间的关系选择箱型图进行可视化**
+```{r echo=FALSE, Bivariate_Plots}
+#绘制boxplot
+ggplot(aes(x = factor(quality), y = volatile.acidity), 
+       data = na.omit(wineQuality)) +
+  geom_boxplot(color = 'blue') +
+  geom_jitter(alpha = 0.2) +
+  stat_summary(fun.y = 'mean', geom = 'point', color = 'red')
+```  
+  
+##### 小结  
+- 经上图可以发现，对于quality更高的部分，整体的volatile.acidity含量明显更低;
+- volatile.acidity与quality呈负相关；  
+<br/>   
+
+#### **2. 对于categorica VS numerical变量，对citric.acid与quality之间的关系选择箱型图进行可视化**
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#绘制boxplot
+ggplot(aes(x = factor(quality), y =citric.acid), 
+       data = na.omit(wineQuality)) +
+  geom_boxplot(color = 'blue') +
+  geom_jitter(alpha = 0.2) +
+  stat_summary(fun.y = 'mean', geom = 'point', color = 'red')
+```
+  
+##### 小结  
+- 经上图可以发现，对于quality更高的部分，整体的citric.acid含量明显更高;  
+- citric.acid与quality呈正相关；  
+<br/>   
+
+#### **3. 对于categorica VS numerical变量，对alcohol与quality之间的关系选择箱型图进行可视化**
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#绘制boxplot
+ggplot(aes(x =factor(quality), y = alcohol), 
+       data = na.omit(wineQuality)) +
+  geom_boxplot(aes(fill = quality.bucket))
+```
+  
+##### 小结  
+- 经上图可以发现，对于quality更高的部分，整体的alcohol含量明显更高;
+- alcohol与quality呈正相关;  
+<br/>   
+
+#### **4. 对于categorica VS numerical变量，对sulphates与quality之间的关系选择箱型图进行可视化**
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#绘制boxplot
+ggplot(aes(x = factor(quality), y = sulphates), data = na.omit(wineQuality)) +
+  geom_boxplot(aes(fill = quality.bucket))
+```
+  
+##### 小结  
+- 经上图可以发现，对于quality更高的部分，整体的sulphates含量明显更高;
+- sulphates与quality呈正相关;    
+<br/>   
+
+#### **5. 对于categorica VS numerical变量，对residual.sugar与quality之间的关系选择箱型图进行可视化**
+```{r echo = FALSE}
+ggplot(aes(x = factor(quality), y = residual.sugar), data = na.omit(wineQuality)) +
+  geom_boxplot(color = 'blue') +
+  geom_jitter(alpha = 0.2) +
+  stat_summary(fun.y = 'mean', geom = 'point', color = 'red')
+```
+  
+##### 小结  
+- 经上图可以发现，residual.sugar对quaality几乎无明显影响  
+- 两变量之间无相关性或相关性极低  
+<br/>   
+
+#### **6. 对于categorica VS numerical变量，对free.sulfur.dioxide与quality之间的关系选择箱型图进行可视化**
+```{r echo = FALSE}
+ggplot(aes(x = factor(quality), y = free.sulfur.dioxide), data = na.omit(wineQuality)) +
+  geom_boxplot(color = 'blue') +
+  geom_jitter(alpha = 0.2) +
+  stat_summary(fun.y = 'mean', geom = 'point', color = 'red')
+```
+  
+##### 小结  
+- 经上图可以发现，free.sulfur.dioxide对quality几乎无明显影响  
+- 两变量之间无相关性或相关性极低  
+<br/>   
+
+#### **7. 对于categorica VS numerical变量，对total.sulfur.dioxide与quality之间的关系选择箱型图进行可视化**
+```{r echo = FALSE}
+ggplot(aes(x = factor(quality), y = total.sulfur.dioxide), data = na.omit(wineQuality)) +
+  geom_boxplot(color = 'blue') +
+  geom_jitter(alpha = 0.2) +
+  stat_summary(fun.y = 'mean', geom = 'point', color = 'red')
+```
+  
+##### 小结  
+- 经上图可以发现，total.sulfur.dioxide对quality几乎无明显影响  
+- 两变量之间无相关性或相关性极低  
+<br/>  
+
+#### **8. 计算residual.sugar与density之间的相关性系数; 对于numerical VS numerical变量，选择散点图进行可视化**
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#求取residual.sugar与density的相关性，绘制散点图，并进行线性拟合
+cor.test(wineQuality$residual.sugar, wineQuality$density, method = 'pearson')
+
+ggplot(aes(x = residual.sugar, y = density), data = wineQuality) +
+  geom_jitter(color = 'orange', alpha = 0.5) +
+  stat_smooth(method = 'lm', color = 'blue')
+```
+
+##### 小结  
+- 计算得density与residual.sugar呈正相关；
+- 经上图可以发现，随着residual.sugar的增大，整体的density分布情况上移，符合计算结果。    
+<br/>   
+
+#### **9. 计算pH与fixed.acidity之间的相关性系数; 对于numerical VS numerical变量，选择散点图进行可视化**
+```{r echo = FALSE}
+#利用散点图可视化pH与fixed.acidity的关系，并进行线性拟合
+cor.test(wineQuality$fixed.acidity, wineQuality$pH, method = 'pearson')
+
+ggplot(aes(x = fixed.acidity, y = pH), data = na.omit(wineQuality)) +
+  geom_point(alpha = 0.5, position = 'jitter') +
+  stat_smooth(color = 'green', method = 'lm')
+```
+
+##### 小结  
+- 计算得pH与fixed.acidity呈正相关；
+- 经上图可以发现，随着fixed.acidity的增大，整体的pH分布情况下移，符合计算结果。   
+<br/>   
+
+#### **10. 计算total.sulfur.dioxide与free.sulfur.dioxide之间的相关性系数; 对于numerical VS numerical变量，选择散点图进行可视化**
+```{r echo = FALSE}
+#利用散点图可视化total.sulfur.dioxide与free.sulfur.dioxide的关系，并进行线性拟合
+cor.test(wineQuality$total.sulfur.dioxide, wineQuality$free.sulfur.dioxide, method = 'pearson')
+
+ggplot(aes(x = free.sulfur.dioxide, y = total.sulfur.dioxide), data = na.omit(wineQuality)) +
+  geom_point(alpha = 0.5, position = 'jitter') +
+  stat_smooth(color = 'green', method = 'lm')
+```
+  
+##### 小结  
+- 计算得total.sulfur.dioxide与free.sulfur.dioxide呈正相关；
+- 经上图可以发现，随着free.sulfur.dioxide的增大，total.sulfur.dioxide增大，符合计算结果。   
+<br/>   
+
+#### **11. 计算sulphates与chlorides之间的相关性系数; 对于numerical VS numerical变量，选择散点图进行可视化**
+```{r echo = FALSE}
+#利用散点图可视化sulphates与chlorides之的关系，并进行线性拟合
+cor.test(wineQuality$sulphates, wineQuality$chlorides, method = 'pearson')
+
+ggplot(aes(x = chlorides, y = sulphates), data = na.omit(wineQuality)) +
+  geom_point(alpha = 0.5, position = 'jitter') +
+  stat_smooth(color = 'green', method = 'lm')
+```
+  
+##### 小结  
+- 两变量之间并无显著关系，无相关性或相关性极小    
+<br/>   
+
+# 双变量分析
+
+### 探讨你在这部分探究中观察到的一些关系。这些感兴趣的特性与数据集内其他特性有什么区别？
+- 与quality呈正相关的变量:  
+    *-* citric.acid, 相关性0.2389624 
+    *-* alcohol, 相关性0.4846796  
+    *-* sulphates, 相关性0.4475019   
+
+- 与quality呈负相关的变量：  
+    *-* volatile.acidity, 相关性-0.3922735    
+
+区别：  
+上述变量在某种程度上和红酒的质量存在一定关系，会对红酒品牌品质造成影响，而其它变量与quality不存在相关性或相关性过弱，对红酒品质的影响不大  
+<br/>   
+
+### 你是否观察到主要特性与其他特性之间的有趣关系？
+- 各项变量中，density与residual.sugar的含量存在一定关系(相关性系数0.3754293 )，通常残余糖分越高，红酒的密度也相对地越大  
+<br/>   
+
+### 你发现最强的关系是什么？
+- 发现的最强的相关性是pH与fixed.acidity之间的相关性，按照method = ‘pearson’计算，cor = -0.7113152  
+<br/>   
+
+# 多变量绘图选择
+
+#### **1. 利用线性拟合的折线图可视化alcohol，quality与citric.acid三者的关系**
+```{r echo=FALSE, Multivariate_Plots}
+#按照citric.acid划分，对alcohol与quality的关系进行线性拟合
+ggplot(aes(x = alcohol, y = quality),
+       data = na.omit(wineQuality)) + 
+  stat_smooth(aes(color = citric.acid.bucket), method = 'lm')
+```
+  
+##### 小结  
+- 红酒的quality随着alcohol含量的增加而提升  
+- citric.acid含量高的红酒，有着相对更高的quality  
+<br/>   
+
+#### **2. 利用均值化的折线图可视化alcohol，quality与sulphates三者的关系**
+```{r echo = FALSE}
+#按照sulphates划分，对alcohol与quality的均值绘制折线图
+ggplot(aes(x = alcohol, y = quality),
+       data = na.omit(wineQuality)) + 
+  geom_line(aes(color = sulphates.bucket), stat = 'summary', 
+            fun.y = mean)
+```
+  
+##### 小结  
+- 红酒的quality随着alcohol含量的增加而提升  
+- sulphates含量高的红酒，有着相对更高的quality  
+<br/>   
+
+#### **3. 利用线性拟合的折线图可视化alcohol，quality与volatile.acidity三者的关系**
+```{r echo = FALSE}
+#按照alco划分，对volatile.acidity与quality的关系进行线性拟合
+ggplot(aes(x = volatile.acidity, y = quality),
+       data = na.omit(wineQuality)) + 
+  stat_smooth(aes(color = alcohol.bucket), method = 'lm')
+```
+  
+##### 小结  
+- 可以明显看出，红酒的quality随着volatile.acidity含量的增加而下降，且同时alcohol含量高的红酒，有着相对更高的quality   
+<br/>   
+
+#### **4. 利用散点图可视化fixed.acidity，quality与pH三者的关系**
+```{r echo = FALSE}
+#按照pH划分，利用散点图对fixed.acidity与quality的关系进行可视化
+ggplot(aes(x = fixed.acidity, y =quality), data = na.omit(wineQuality)) +
+  geom_point(aes(color = pH.bucket), alpha = 0.5, position = 'jitter') 
+```
+
+##### 小结  
+- fixed.acidity明显与pH的分布相关。fixed.acidty越低，pH越显酸性；  
+- pH值/fixed.acidity对quality无明显影响  
+<br/>   
+
+#### **5. 利用散点图可视化density，alcohol与quality三者的关系**
+```{r echo = FALSE}
+#按照quality划分级别，对density，alcohol与quality的关系进行线性拟合
+ggplot(aes(x = density, y = alcohol),
+       data = na.omit(wineQuality)) + 
+  geom_point(aes(color = factor(quality.bucket))) +
+  geom_smooth(aes(color = quality.bucket), method = 'lm')
+```
+  
+##### 小结
+- 红酒的alcohol随着density的增加而呈减少趋势  
+- alcohol含量高的红酒，有着相对更高的quality   
+<br/>   
+
+# 多变量分析
+
+###  探讨你在这部分探究中观察到的一些关系。通过观察感兴趣的特性，是否存在相互促进的特性？  
+- 经过双变量分析后，得出变量volatile.acidity, citric.acid, sulphates, alcohol与quality有相对大的相关性，因此对这几个变量进行更为详细的多变量分析 
+- citric.acid, sulphates与alcohol的增大可共同促进红酒品质的提升，在其中两个变量确定时，往往第三个变量更大的数据点，有着更高的品质分数  
+- volatile.acidity对红酒品质起反作用；同理, citric.acid, sulphates与alcohol
+三个变量确定时，往往volatile.acidity更大的数据点，其对应的品质分数相对要低  
+<br/>   
+
+### 这些特性之间是否存在有趣或惊人的联系呢？
+- 随着红酒中的fixed.acidity升高，pH含量显著下降，这两个变量具有非常强的相关性;  
+- 同时，对pH, quality, fixde.acidity进行多变量可视化发现，pH值和fixed.acidity的分布对quality无明显影响  
+<br/>   
+
+------
+
+# 定稿图与总结
+
+### 绘图一
+```{r echo=FALSE, Plot_One}
+ggplot(aes(x = alcohol, y = citric.acid), 
+       data = na.omit(wineQuality)) +
+  geom_point( aes(color = quality.bucket), alpha = 0.7) +
+  labs(x = 'alcohol (% by volume)', y = 'citric acid (g / dm^3)',
+       title = 'alcohol VS citric.acid grouped by quality') 
+```
+
+##### Fig 1: 通过创建散点图，并将quality分为品质‘高’(score>6)与‘低’(score<6)两类颜色，对alcohol，citric.acid与红酒品质的关系可视化.
+
+### 描述一
+- 从上图可以看出，品质分数在(3,6]区间内的点主要集中在左下角，品质分数在(6,8]区间内的点主要集中在右上角，因此可以得出结论：较高的酒精含量和较高的柠檬酸，对红酒的品质有一定的提升作用。
+<br/>  
+  
+  
+### 绘图二
+```{r echo=FALSE, Plot_Two}
+ggplot(aes( x = volatile.acidity, y = sulphates), 
+       data = na.omit(wineQuality)) + 
+  geom_jitter(aes(color = quality.bucket)) +
+  labs(x = 'volatile acidity (acetic acid - g / dm^3)', 
+       y = 'sulphates (potassium sulphate - g / dm3)',
+       title = 'volatile.acidity VS sulphates grouped by quality') 
+```
+
+##### Fig 2: 通过创建散点图，并将quality分为品质‘高’(score>6)与‘低’(score<6)两类颜色，对volatile.acidity，sulphates与红酒品质的关系可视化.
+  
+### 描述二
+- 从上图可以看出，品质分数在(3,6]区间内的点主要集中右左下角，品质分数在(6,8]区间内的点主要集中在左上角，因此可以得出结论：较低的挥发性酸和较高的硫酸盐，对红酒的品质有一定的提升作用。
+<br/>  
+  
+  
+### 绘图三
+```{r echo=FALSE, Plot_Three}
+ggplot(aes(x = pH.bucket, y =quality), data = na.omit(wineQuality)) +
+  geom_boxplot(aes( fill = pH.bucket)) +
+  labs(x = 'pH', y = 'quality (score between 0 and 10)',
+       title = 'Red wine quality by pH') 
+```
+
+##### Fig 3: 通过创建箱形图，并将pH分为品质‘高’(pH>3.32)与‘低’(pH<3.32)两类颜色，对pH值的大小是否对红酒品质有显著影响进行可视化.
+  
+### 描述三
+- 将pH值按照中分数分为两组，分别对其quality的分布进行箱形图可视化，结果发现对于红酒来说，主要的ph值较低，整体绝大多数呈酸性，且pH值的变化对quality的影响很小很小(几乎看不出来差别)。  
+<br/>  
+
+------
+
+# 反思
+- 在刚开始接触数据集时，可能对与纷乱的各类变量感到一脸茫然，不知从何入手。后来经过在google里查阅资料，对各类变量的具体含义做一定的了解，此时在具有一定domain knowledge的基础上，可以更好、更敏感地捕捉到变量之间的关系。 例如：(1)看到densit与residual.sugar两个变量，在了解物理常识的情况下很容易联想得到糖分是否与液体密度有密切关系;(2)在理解pH的含义时，自然明白越小的pH值代表液体越表现酸性，越大的pH值代表液体越呈碱性，此时很容易联想到fixed.acidity作为红酒中不可挥发性的酸，越高的浓度一定会使pH值变小，最后利用可视化进行验证自己的推理即可。因此，越好地理解各类变量的实际意义，越有利于在对数据的敏感度。  
+- 对数据做一些初步的清洗十分重要，对于一些个别的极大值或极小值，很有可能在分析时混淆视听，影响自己的判断。  
+- 在经过仔细地了解数据的含义，观察数据分布并积极尝试的基础下，不断地推进项目进度，最终逐步解决问题。  
+- 未来计划：可以进一步尝试利用机器学习中的回归类算法，利用红酒数据集中的其它变量对quality进行建模，实现输入红酒的基本参数，输出对其quality的预测评分。
+
+
